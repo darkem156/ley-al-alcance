@@ -1,4 +1,5 @@
 from django.db import models
+from pgvector.django import VectorField
 
 class Tema(models.Model):
     tema = models.CharField(max_length=255)
@@ -22,6 +23,8 @@ class Ley(models.Model):
     abrogada = models.BooleanField(default=False)
     comentario = models.TextField(blank=True, null=True)
     tema = models.ManyToManyField(Tema, related_name='leyes')
+    contenido_pdf = models.TextField(blank=True)
+    embedding = VectorField(dimensions=1024, null=True)
 
     def __str__(self):
         return self.titulo

@@ -1,5 +1,28 @@
 from rest_framework import serializers
 from .models import Ley, Tema, Historial, Decreto
+import pytesseract
+from sentence_transformers import SentenceTransformer
+import requests
+import tempfile
+from pdf2image import convert_from_path
+
+model_emb = SentenceTransformer("BAAI/bge-m3")
+
+def extraer_texto_pdf(url):
+    pdf_data = requests.get(url).content
+
+    with tempfile.NamedTemporaryFile(suffix=".pdf") as tmp:
+        tmp.write(pdf_data)
+        tmp.flush()
+
+        pages = convert_from_path(tmp.name)
+
+        texto = ""
+        for page in pages:
+            texto += pytesseract.image_to_string(page, lang="spa") + "\n"
+
+        return texto
+
 
 class DecretoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,7 +48,7 @@ class LeySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ley
-        fields = ['id', 'titulo', 'abrogada', 'comentario', 'tema', 'historial']
+        fields = '__all__'
 
     def create(self, validated_data):
         tema_data = validated_data.pop('tema', [])
@@ -47,9 +70,11 @@ class LeySerializer(serializers.ModelSerializer):
 
             ley.tema.add(tema_obj)
 
+        historiales_creados = []
         for hist_item in historial_data:
             decretos_data = hist_item.pop('decretos', [])
             historial = Historial.objects.create(ley=ley, **hist_item)
+            historiales_creados.append(historial)
 
             for dec_item in decretos_data:
                 dec_external_id = dec_item.get('id')
@@ -64,5 +89,13 @@ class LeySerializer(serializers.ModelSerializer):
                     decreto, _ = Decreto.objects.get_or_create(numero=numero)
 
                 historial.decretos.add(decreto)
+        
+        mas_reciente = sorted(historiales_creados, key=lambda x: x.fecha_ppo, reverse=True)[0]
+        print(mas_reciente.rutaArchivo)
+        texto = extraer_texto_pdf(mas_reciente.rutaArchivo)
+        print("Texto extraído:", texto[:500])  # Muestra los primeros 500 caracteres del texto extraído
+        ley.contenido_pdf = texto
+        ley.embedding = model_emb.encode(texto, normalize_embeddings=True).tolist()
+        ley.save()
 
         return ley
