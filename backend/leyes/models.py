@@ -42,3 +42,11 @@ class Historial(models.Model):
 
     def __str__(self):
         return f"Historial de {self.ley.titulo} ({self.fecha_ppo})"
+
+class Pregunta(models.Model):
+    id = models.AutoField(primary_key=True)
+    pregunta = models.TextField()
+    leyes = models.JSONField()
+    resumen = models.TextField()
+    embedding = VectorField(dimensions=1024, null=True)
+    fecha = models.DateField(auto_now_add=True)

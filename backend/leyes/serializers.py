@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Ley, Tema, Historial, Decreto
+from .models import Ley, Tema, Historial, Decreto, Pregunta
 import pytesseract
 from sentence_transformers import SentenceTransformer
 import requests
@@ -42,9 +42,22 @@ class TemaSerializer(serializers.ModelSerializer):
         model = Tema
         fields = ['id', 'tema']
 
+class PreguntaSerializer(serializers.ModelSerializer):
+    distance = serializers.FloatField(read_only=True)
+    class Meta:
+        model = Pregunta
+        fields = '__all__'
+
+    def create(self, validated_data):
+        pregunta = Pregunta.objects.create(**validated_data)
+
+        pregunta.save()
+        return pregunta
+
 class LeySerializer(serializers.ModelSerializer):
     tema = TemaSerializer(many=True)
     historial = HistorialSerializer(many=True)
+    distance = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Ley
