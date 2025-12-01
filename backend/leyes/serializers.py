@@ -5,6 +5,10 @@ from sentence_transformers import SentenceTransformer
 import requests
 import tempfile
 from pdf2image import convert_from_path
+from ollama import Client
+from langdetect import detect
+
+ollama = Client()
 
 model_emb = SentenceTransformer("BAAI/bge-m3")
 
@@ -109,6 +113,36 @@ class LeySerializer(serializers.ModelSerializer):
         print("Texto extraído:", texto[:500])  # Muestra los primeros 500 caracteres del texto extraído
         ley.contenido_pdf = texto
         ley.embedding = model_emb.encode(texto, normalize_embeddings=True).tolist()
+        # generar resumen de el documento
+        prompt = f"""
+        Genera un resumen claro y conciso del siguiente texto legal usando un lenguaje coloquial y de forma entendible para una persona común sin conocimientos en leyes.
+        {texto}
+        """
+        response = ollama.generate(
+            model="llama3",
+            prompt=prompt
+        )
+        resumen = response["response"].strip()
+        # 5) Detect language
+        try:
+            lang = detect(resumen)
+        except:
+            lang = "unknown"
+
+        # 6) If not Spanish, translate locally
+        if lang != "es":
+            translate_prompt = f"""
+            Traduce el siguiente texto al español, manteniendo precisión legal:
+            {resumen}
+            """
+
+            translated = ollama.generate(
+                model="llama3",
+                prompt=translate_prompt
+            )
+
+            resumen = translated["response"].strip()
+        ley.resumen = resumen
         ley.save()
 
         return ley

@@ -14,6 +14,7 @@ from .models import Ley, Pregunta
 from .serializers import LeySerializer, PreguntaSerializer
 
 from sentence_transformers import SentenceTransformer
+import requests
 
 ollama = Client()
 
@@ -45,8 +46,64 @@ class LeyViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(detail=False, methods=['get'])
+    def ley(self, request):
+        pk = request.query_params.get("pk", None)
+        if not pk:
+            return Response({"error": "Debes enviar ?pk=<id_ley>"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Obtener la ley principal
+        try:
+            ley = Ley.objects.get(pk=pk)
+        except Ley.DoesNotExist:
+            return Response({"error": "Ley no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Convertir el embedding de la ley a string tipo array Postgres
+        embedding_actual = "[" + ",".join(str(x) for x in ley.embedding) + "]"
+
+        # Buscar leyes relacionadas por similitud semántica
+        relacionadas = (
+            Ley.objects.exclude(pk=ley.pk)  # excluir la ley actual
+                      .exclude(embedding=None)
+                      .annotate(
+                          distance=RawSQL("embedding <-> %s", (embedding_actual,))
+                      )
+                      .order_by("distance")[:5]  # top 5
+        )
+
+        # Serializar ley principal
+        ley_serializada = LeySerializer(ley).data
+
+        # Serializar relacionadas
+        relacionadas_serializadas = LeySerializer(relacionadas, many=True).data
+
+        # Agregar al response
+        resultado = {
+            "ley": ley_serializada,
+            "relacionadas": relacionadas_serializadas
+        }
+
+        return Response(resultado)
+    
     @action(detail=False, methods=['post'])
     def semantic(self, request):
+        reqUrl = "https://comedatos.qroo.gob.mx/api/NucleoDigital"
+
+        headersList = {
+        "Accept": "*/*",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI0IiwianRpIjoiMmI0YjYxODg1Y2JlNzlmNzRhMGRhMmI5ZDc5MGZjMjkyMmI0MDlhNTc3NWFkMGUyNjc2YTVmMmI4Mjc2NjgzZWYyOWYxMTEyZjgzNTZmZDIiLCJpYXQiOjE3NjM4NjU5MTEuMTc5NzA2LCJuYmYiOjE3NjM4NjU5MTEuMTc5NzA4LCJleHAiOjE3OTU0MDE5MTAuOTY1MDczLCJzdWIiOiI4MSIsInNjb3BlcyI6W119.SLfNGDfaMCMqqw8jSMmUIpqDml-RbEdIIxi9qvOo5uj1DdSRitGuto93rqulafg4xzvwcuPMRAoikByQIBoixqMitkBjIOvSPQKHKr0DwNqvACbAG5DkDkwkOccH2mq4XCDes9gf_8I9UTHBeJpHfBcBq_CjBoAV25Hx9fm6PaN3luWHmS-Bp9L1tUsImk4DBiRFcvSj7ArfdoL3sUyyIgMh4i1p7tWw6HTB-03aeq3GSqEbkvb3BTSNKw1Lls8oOC4N2KtNMk4p3qmHUbEcf5hs5moumJJClm_fIJ1WZBrUtTznHeLEXb08jArorunZkQXrVhBKr-mjwzK5CX6dOfj_EwDsUZtqL_Odn18igeMktxIuLpjcAh8Dvb7EmGSbY1rq8yT0rUU6nqE1oVjMaDlqOJIPUZhy0kJd_ercOPLpkX8k-OCxLHpG4-30-qmZzY2hcOGjwySCbOzp5dyxUuaVasCw_PzvxZmDHgZfcofjxtN169v16yj8Zu9qORGMFsy-ZqViExP651igI98OgFvQgY2V51JVa46b6Go5iyAqLU0C7F9fcYouaQFNO09pV5QmWvWiaAsQmnA9C4Ir0cxAFwDKEM3irVZRCNdI-ebAlcWR_74WwUSQIRbfD60slA25omyLeWZsiyN3rdiTg-ZdOaW3t6VLSd-9tiQw6i4" 
+        }
+
+        payload = json.dumps({
+        "email": "espinosasaul85@gmail.com",
+        "password": "Slimeguy$1"
+        })
+
+        response = requests.request("POST", reqUrl, data=payload,  headers=headersList)
+        api_data = response.json()
+        leys_api = [l for l in api_data["datosTablas"]["h25_normatividad"]]
+        print(f"Resultado de la api: {api_data}")
         query = request.data.get("q", None)
         historial_mensajes = request.data.get("h", None)
         if not query:
@@ -62,20 +119,25 @@ class LeyViewSet(viewsets.ModelViewSet):
         preguntas_parecidas = PreguntaSerializer(preguntas_parecidas, many=True).data
         preguntas_parecidas = [pregunta for pregunta in preguntas_parecidas if pregunta["distance"] < 0.5]
         resumen = ""
-        print(historial_mensajes)
 
         if len(preguntas_parecidas) > 0 and (historial_mensajes is None or historial_mensajes == []):
             print("hay una prehunta parecida")
             pregunta_parecida = preguntas_parecidas[0]
             pregunta = PreguntaSerializer(data={"pregunta": query, "leyes": pregunta_parecida["leyes"], "mensajes": [], "resumen": pregunta_parecida["resumen"], "embedding": pregunta_parecida["embedding"]})
-            resumen = pregunta_parecida["resumen"]
             leyes = Ley.objects.filter(id__in=pregunta_parecida["leyes"])
             leyes_serial = LeySerializer(leyes, many=True).data
             texto = ""
             for ley in leyes:
+                resumen = ""
+                # normalize titles to lowercase
+                ley_api = [l for l in leys_api if l["titulo"].lower().replace(".", "") == ley.titulo.lower().replace(".", "")]
+                if len(ley_api) > 0:
+                    print(f"ley api encontrada para {ley.titulo}")
+                    resumen = ley_api[0]["descripcion"]
+                    ley.resumen = resumen
                 texto += f"Título: {ley.titulo}\n"
                 texto += f"Temas: {', '.join([t.tema for t in ley.tema.all()])}\n"
-                texto += f"Contenido:\n{ley.contenido_pdf}\n\n"
+                texto += f"Contenido:\n{resumen}\n\n"
                 texto += f"Consulta: {query}\n"
 
             # 4) Llamar a Ollama local para un resumen
@@ -100,29 +162,32 @@ class LeyViewSet(viewsets.ModelViewSet):
                 pregunta.save()
             else:
                 print("pregunta no valida")
-                print(pregunta.errors)
         else:
             print("no hay una pregunta parecida o es un chat")
             # 2. Usar RawSQL para invocar el operador de pgvector (<-> = distancia euclidiana)
             leyes = Ley.objects.exclude(embedding=None).annotate(
                 distance=RawSQL("embedding <-> %s", (query_emb,))
-            ).order_by("distance")[:1]
+            ).order_by("distance")[:5]
 
             # 3) Construir texto combinado
             texto = ""
             for ley in leyes:
+                resumen = ""
+                # normalize titles to lowercase
+                ley_api = [l for l in leys_api if l["titulo"].lower().replace(".", "") == ley.titulo.lower().replace(".", "")]
+                if len(ley_api) > 0:
+                    resumen = ley_api[0]["descripcion"]
+                else:
+                    resumen = ley.resumen
                 texto += f"Título: {ley.titulo}\n"
                 texto += f"Temas: {', '.join([t.tema for t in ley.tema.all()])}\n"
-                texto += f"Contenido:\n{ley.contenido_pdf}\n\n"
+                texto += f"Resumen:\n{resumen}\n\n"
                 texto += f"Consulta: {query}\n"
 
             # 4) Llamar a Ollama local para un resumen
             prompt = f"""
-            Resume de forma clara y natural el siguiente texto legal. 
-            Enuncia los puntos clave, propósito de la ley y efectos principales. Toma en cuenta que fueron seleccionadas en base a su similitud semántica con la consulta del usuario.
-            Texto:
+            Guarda el contexto de los resumenes de las siguientes leyes y genera un resumen claro y conciso del siguiente texto legal usando un lenguaje coloquial y de forma entendible para una persona común sin conocimientos en leyes.
             {texto}
-
             """
             messages = [{
                 "role": "system",
@@ -136,7 +201,6 @@ class LeyViewSet(viewsets.ModelViewSet):
                 model="llama3",
                 messages=messages
             )
-            print("Ollama response:", result)
 
             messages.append(result["message"])
             resumen = messages[1]["content"].strip()
@@ -170,7 +234,6 @@ class LeyViewSet(viewsets.ModelViewSet):
                 pregunta.save()
             else:
                 print("pregunta no valida")
-                print(pregunta.errors)
 
         return Response({
             "query": query,

@@ -25,6 +25,7 @@ class Ley(models.Model):
     tema = models.ManyToManyField(Tema, related_name='leyes')
     contenido_pdf = models.TextField(blank=True)
     embedding = VectorField(dimensions=1024, null=True)
+    resumen = models.TextField(blank=True)
 
     def __str__(self):
         return self.titulo
