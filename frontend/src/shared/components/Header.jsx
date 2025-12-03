@@ -25,7 +25,7 @@ export default function Header({ onNavigate }) {
             <div className="bg-blue-600 p-2 rounded-lg">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
-            <a href="/" className="text-slate-900">Ley Al Alcance</a>
+            <a href="/ley-al-alcance" className="text-slate-900">Ley Al Alcance</a>
           </div>
           
           <nav className="hidden md:flex items-center gap-1">
