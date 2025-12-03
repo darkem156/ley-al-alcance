@@ -13,8 +13,8 @@ interface HeaderProps {
 export default function Header({ onNavigate }) {
   const currentPage = location.pathname;
   const navItems = [
-    { id: '/', label: 'Buscar Leyes', icon: Search },
-    { id: '/examples', label: 'Ejemplos Practicos', icon: MessageCircle },
+    { id: '/ley-al-alcance/', label: 'Buscar Leyes', icon: Search },
+    { id: '/ley-al-alcance/examples', label: 'Ejemplos Practicos', icon: MessageCircle },
   ];
 
   return (
