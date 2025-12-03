@@ -17,7 +17,7 @@ export default function Home() {
       const updatedHistorial = [...historial, newMessage];
       setHistorial(updatedHistorial);
     }
-    const apiUrl = `http://localhost:8000/api/leyes/semantic/`;
+    const apiUrl = `http://137.184.1.204/api/leyes/semantic/`;
     const historialToSend = message ? [...historial, { role: "user", content: message }] : historial;
     const response = await fetch(apiUrl, {
       method: "POST",

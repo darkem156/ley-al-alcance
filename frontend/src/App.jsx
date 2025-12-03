@@ -14,9 +14,9 @@ function App() {
         <main>
           <Suspense fallback={<div>Loading...</div>}>
             <Routes>
-              <Route path="/" element={<SearchPage />} />
-              <Route path="/laws/:id" element={<LawDetail />} />
-              <Route path="/examples" element={<PracticalExamples />} />
+              <Route path="/ley-al-alcance" element={<SearchPage />} />
+              <Route path="/ley-al-alcance/laws/:id" element={<LawDetail />} />
+              <Route path="/ley-al-alcance/examples" element={<PracticalExamples />} />
             </Routes>
           </Suspense>
         </main>
