@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, Sparkles, Mic, MicOff, MessageCircle } from 'lucide-react';
+import { Search, Sparkles, Mic, MicOff, MessageCircle, Scale } from 'lucide-react';
 import { LawCard } from './LawCard';
 import ReactMarkdown from "react-markdown";
 import { X } from 'lucide-react';
@@ -46,7 +46,7 @@ export default function SearchPage() {
   // ----------------------
   // SEARCH
   // ----------------------
-  const handleSearch = async (suggestedQuery = null, messageFromChat = null) => {
+  const handleSearch = async (suggestedQuery = null, messageFromChat = null, ignoreHistorial = false) => {
     const searchQuery = suggestedQuery || query;
 
     if (!searchQuery.trim()) return;
@@ -68,7 +68,7 @@ export default function SearchPage() {
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ q: query, h: historialToSend }),
+      body: JSON.stringify({ q: searchQuery, h: ignoreHistorial ? [] : historialToSend }),
     });
 
     const data = await response.json();
@@ -140,7 +140,7 @@ export default function SearchPage() {
             {isListening ? <MicOff /> : <Mic />}
           </button>
           <button
-            onClick={() => handleSearch()}
+            onClick={() => handleSearch(null, null, true)}
             className="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700"
           >
             <Search />
@@ -254,6 +254,20 @@ export default function SearchPage() {
 
         {hasSearched && (
           <div className="mt-6">
+            
+            <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl p-6 mb-8 border border-blue-100">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="bg-blue-600 p-3 rounded-lg">
+                  <Scale className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-slate-900 mb-2">Marco Legal General</h2>
+                  <div className='max-h-[200px] overflowy-auto'>
+                    <ReactMarkdown>{historial[1].content}</ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            </div>
             <p className="text-slate-600 mb-4">
               {results.length} {results.length === 1 ? "ley encontrada" : "leyes encontradas"}
             </p>

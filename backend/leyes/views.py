@@ -124,15 +124,14 @@ class LeyViewSet(viewsets.ModelViewSet):
             print("hay una prehunta parecida")
             pregunta_parecida = preguntas_parecidas[0]
             pregunta = PreguntaSerializer(data={"pregunta": query, "leyes": pregunta_parecida["leyes"], "mensajes": [], "resumen": pregunta_parecida["resumen"], "embedding": pregunta_parecida["embedding"]})
+            resumen = pregunta_parecida["resumen"]
             leyes = Ley.objects.filter(id__in=pregunta_parecida["leyes"])
             leyes_serial = LeySerializer(leyes, many=True).data
             texto = ""
             for ley in leyes:
-                resumen = ""
                 # normalize titles to lowercase
                 ley_api = [l for l in leys_api if l["titulo"].lower().replace(".", "") == ley.titulo.lower().replace(".", "")]
                 if len(ley_api) > 0:
-                    print(f"ley api encontrada para {ley.titulo}")
                     resumen = ley_api[0]["descripcion"]
                     ley.resumen = resumen
                 texto += f"Título: {ley.titulo}\n"
