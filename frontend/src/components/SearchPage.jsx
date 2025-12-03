@@ -178,7 +178,7 @@ export default function SearchPage() {
     </div>
 
     {/* MESSAGE LIST */}
-    <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-slate-50">
+    <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
       {historial.length > 2 ? (
         historial.slice(2).map((msg, index) => (
           <div
@@ -200,6 +200,17 @@ export default function SearchPage() {
           </p>
         </div>
       )}
+          { waitingResponse && <div className="flex gap-1 my-3 bg-white border max-w-80 w-fit p-3 rounded-xl shadow-sm">
+            <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+            <div
+              className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+              style={{ animationDelay: "150ms" }}
+            ></div>
+            <div
+              className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+              style={{ animationDelay: "300ms" }}
+            ></div>
+          </div>}
     </div>
 
     {/* INPUT AREA */}
