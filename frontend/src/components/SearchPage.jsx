@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 
 export default function SearchPage() {
   const [query, setQuery] = useState(new URLSearchParams(window.location.search).get('q') || '');
+  const [waitingResponse, setWaitingResponse] = useState(false);
   const [results, setResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -47,6 +48,7 @@ export default function SearchPage() {
   // SEARCH
   // ----------------------
   const handleSearch = async (suggestedQuery = null, messageFromChat = null, ignoreHistorial = false) => {
+    setWaitingResponse(true);
     const searchQuery = suggestedQuery || query;
 
     if (!searchQuery.trim()) return;
@@ -76,6 +78,7 @@ export default function SearchPage() {
     setResults(data.resultados || []);
     setHistorial(data.historial_mensajes || []);
     setHasSearched(true);
+    setWaitingResponse(false);
   };
 
   // ----------------------
@@ -252,6 +255,20 @@ export default function SearchPage() {
           </div>
         )}
 
+        {waitingResponse && (
+          <div className="flex gap-1 my-3">
+            <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+            <div
+              className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+              style={{ animationDelay: "150ms" }}
+            ></div>
+            <div
+              className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+              style={{ animationDelay: "300ms" }}
+            ></div>
+          </div>
+        )}
+
         {hasSearched && (
           <div className="mt-6">
             
@@ -262,7 +279,7 @@ export default function SearchPage() {
                 </div>
                 <div>
                   <h2 className="text-slate-900 mb-2">Marco Legal General</h2>
-                  <div className='max-h-[200px] overflowy-auto'>
+                  <div className='max-h-[200px] overflow-y-auto'>
                     <ReactMarkdown>{historial[1].content}</ReactMarkdown>
                   </div>
                 </div>

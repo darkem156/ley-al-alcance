@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpen, Building2, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, BookOpen, Building2, Link as LinkIcon, VolumeX, Volume2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -9,9 +9,33 @@ interface LawDetailProps {
 }
 
 export default function LawDetail() {
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
   const [law, setLaw] = useState<any>(null);
+  
+  const handleSpeak = () => {
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    if ('speechSynthesis' in window) {
+      console.log('Speaking law resumen:', law.ley.resumen);
+      const utterance = new SpeechSynthesisUtterance(law.ley.resumen);
+      utterance.lang = 'es-ES';
+      utterance.rate = 0.9;
+      
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert('Lo siento, tu navegador no soporta síntesis de voz.');
+    }
+  };
 
   useEffect(() => {
     // Fetch law details from API
@@ -56,7 +80,30 @@ export default function LawDetail() {
           <div className="flex-1">
             <h1 className="text-slate-900 mb-3">{law.ley.titulo}</h1>
             <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
-              <p className="text-sm text-slate-600 mb-1">Resumen en Lenguaje Sencillo</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-slate-600">Resumen en Lenguaje Sencillo</p>
+                <button
+                  onClick={handleSpeak}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm ${
+                    isSpeaking
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-300'
+                  }`}
+                  title={isSpeaking ? 'Detener lectura' : 'Escuchar resumen'}
+                >
+                  {isSpeaking ? (
+                    <>
+                      <VolumeX className="w-4 h-4" />
+                      <span>Detener</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="w-4 h-4" />
+                      <span>Escuchar</span>
+                    </>
+                  )}
+                </button>
+              </div>
               <div className="text-slate-700 max-h-[250px] overflow-y-auto"><Markdown>{law.ley.resumen}</Markdown></div>
             </div>
           </div>
