@@ -17,7 +17,7 @@ export default function Home() {
       const updatedHistorial = [...historial, newMessage];
       setHistorial(updatedHistorial);
     }
-    const apiUrl = `http://ley-al-alcance.duckdns.org/api/leyes/semantic/`;
+    const apiUrl = `https://ley-al-alcance.duckdns.org/api/leyes/semantic/`;
     const historialToSend = message ? [...historial, { role: "user", content: message }] : historial;
     const response = await fetch(apiUrl, {
       method: "POST",

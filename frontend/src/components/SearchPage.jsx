@@ -62,7 +62,7 @@ export default function SearchPage() {
       setHistorial(updatedHistorial);
     }
 
-    const apiUrl = `http://ley-al-alcance.duckdns.org/api/leyes/semantic/`;
+    const apiUrl = `https://ley-al-alcance.duckdns.org/api/leyes/semantic/`;
     const historialToSend = messageFromChat
       ? [...historial, { role: "user", content: messageFromChat }]
       : historial;

@@ -36,7 +36,7 @@ export default function AIChat() {
   //     ENVÍO REAL AL BACKEND
   // =============================
   const sendToBackend = async (userText: string) => {
-    const apiUrl = `http://ley-al-alcance.duckdns.org/api/leyes/semantic/`;
+    const apiUrl = `https://ley-al-alcance.duckdns.org/api/leyes/semantic/`;
 
     const payload = {
       q: userText,

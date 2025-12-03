@@ -40,7 +40,7 @@ export default function LawDetail() {
   useEffect(() => {
     // Fetch law details from API
     async function fetchLawDetails() {
-      const response = await fetch(`http://ley-al-alcance.duckdns.org/api/leyes/ley?pk=${id}`);
+      const response = await fetch(`https://ley-al-alcance.duckdns.org/api/leyes/ley?pk=${id}`);
       const data = await response.json();
       setLaw(data);
       console.log('Fetched law details:', data);

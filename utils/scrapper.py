@@ -1,7 +1,7 @@
 import requests
 
 url_congreso = "https://www.congresoqroo.gob.mx/api/v2/leyes/?format=json"
-url_mi_api = "http://ley-al-alcance.duckdns.org/api/leyes/"
+url_mi_api = "https://ley-al-alcance.duckdns.org/api/leyes/"
 
 resp = requests.get(url_congreso)
 for ley in resp.json()['results']:
